@@ -3,139 +3,202 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout>
-  <!-- HERO page: smaller padding, smoother reveal, overlays removed, vertical 80/20 crop bias -->
   <main class="frame-hero">
-    <div class="image-wrap" aria-hidden="false">
-      <div class="visual" id="heroVisual" aria-hidden="true">
-        <!-- Change the image path if needed -->
-        <img id="heroImg" src="/assets/head.webp" alt="Onkar Yaglewad" />
+    <div class="hero-inner" id="heroInner">
+      <div class="visual" id="heroVisual">
+        <img class="base" id="heroBase" src="/assets/head.webp" alt="Onkar Yaglewad" />
+        <div class="divider" aria-hidden="true"></div>
       </div>
+
+      <!-- left: sketch overlay (clipped to left half) -->
+      <img
+        class="overlay overlay-left"
+        id="heroOverlayLeft"
+        src="/assets/head_overlay_sketch.png"
+        alt="sketch-overlay"
+        aria-hidden="true"
+      />
+
+      <!-- right: real overlay (full) -->
+      <img
+        class="overlay overlay-right"
+        id="heroOverlayRight"
+        src="/assets/head_overlay_real.png"
+        alt="real-overlay"
+        aria-hidden="true"
+      />
     </div>
   </main>
 
-  <!-- content below so you can test scrolling -->
   <section class="below">
     <div class="container">
       <h2>More about my work</h2>
-      <p>This page includes a text block so you can test the scroll-driven hero animation. Scroll down to see the hero expand to full-bleed.</p>
-
-      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor.</p>
-      <p>Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat.</p>
-      <p>Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue. Ut in risus volutpat libero pharetra tempor.</p>
-      <p>Curabitur vestibulum aliquam leo. Praesent egestas neque eu enim. In hac habitasse platea dictumst. Fusce a quam. Etiam ut purus mattis mauris sodales aliquam.</p>
-      <p>Nulla facilisi. Integer lacinia sollicitudin massa. Cras metus. Sed aliquet risus a tortor. Integer id quam.</p>
-      <p>Morbi in sem quis dui placerat ornare. Pellentesque odio nisi, euismod in, pharetra a, ultricies in, diam. Sed arcu. Cras consequat.</p>
-      <p>Praesent dapibus, neque id cursus faucibus, tortor neque egestas augue, eu vulputate magna eros eu erat. Aliquam erat volutpat. Nam dui mi, tincidunt quis, accumsan porttitor, facilisis luctus, metus.</p>
-      <p>Phasellus ultrices nulla quis nibh. Quisque a lectus. Donec consectetuer ligula vulputate sem tristique cursus.</p>
-      <p>Nam nulla quam, gravida non, commodo a, sodales sit amet, nisi. Pellentesque fermentum dolor. Aliquam quam lectus, facilisis auctor, ultrices ut, elementum vulputate, nunc.</p>
+      <p>Scroll down to see the hero reveal to full-bleed.</p>
+      <p>…demo text…</p>
     </div>
   </section>
 
   <style>
     :root{
-      /* INSET halved vs previous file (smaller padding) */
-      --initial-inset: clamp(6px, 0.9vh, 1.4vw);
-      --initial-radius: 28px;
-      --collapse-threshold: 0.40; /* fraction of viewport used to finish reveal */
-      --dead-zone: 100px; /* user-set dead zone */
-      --easing: cubic-bezier(.18,.9,.32,1);
+      --pad-side: clamp(18px, 2.2vh, 2.5vw);
+      --pad-top: var(--pad-side);
+      --pad-left: var(--pad-side);
+      --pad-right: var(--pad-side);
+      --pad-bottom: calc(var(--pad-side) * 2);
+
+      --card-radius: 28px;
+
+      --dead-zone: 100px;
+      --finish-frac: 0.38;
+      --lerp: 0.08;
+
+      /* left (sketch) */
+      --overlay-base-width-left: 34%;
+      --overlay-scale-left: 1.18;
+      --overlay-max-width-left: 48%;
+      --overlay-left-left: 50.6%;
+      --overlay-bottom-left: -5.2%;
+      --overlay-offset-x-left: 0px;
+      --overlay-offset-y-left: 0px;
+
+      /* right (real) */
+      --overlay-base-width-right: 34.09%;
+      --overlay-scale-right: 1.25;
+      --overlay-max-width-right: 52%;
+      --overlay-left-right: 50.6%;
+      --overlay-bottom-right: -7.38%;
+      --overlay-offset-x-right: 8px;
+      --overlay-offset-y-right: 0px;
+
+      --divider-color: rgba(255,255,255,0.12);
+      --divider-width: 4px;
+
+      --page-bg: #0b0b0b;
+      --card-shadow: 0 18px 40px rgba(0,0,0,0.45);
     }
 
-    /* HERO */
+    html,body{ height:100%; margin:0; background:var(--page-bg); color:#fff; font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial; }
+    *{ box-sizing:border-box; }
+
     .frame-hero{
-      height: 100vh;
-      width: 100%;
+      height:100vh;
+      width:100%;
       display:flex;
       align-items:center;
       justify-content:center;
-      box-sizing:border-box;
-      background: #0b0b0b;
-      overflow:hidden;
       position:relative;
+      overflow:hidden;
     }
 
-    .image-wrap{
+    .hero-inner{
+      position:absolute;
+      inset: var(--pad-top) var(--pad-right) var(--pad-bottom) var(--pad-left);
+      overflow: visible;
+      pointer-events:none;
+    }
+
+    .visual{
       position: relative;
       width: 100%;
       height: 100%;
-      overflow: visible;
-      display:block;
-      pointer-events: none;
-    }
-
-    /* Visual: a single rounded box that clips the image using clip-path.
-       We do NOT scale the image — we reveal it by shrinking the inset.
-       Removed overlays entirely per request. */
-    .visual{
-      position:absolute;
-      inset: var(--initial-inset);
-      border-radius: var(--initial-radius);
-      overflow: clip;
-      will-change: clip-path, border-radius, box-shadow;
+      min-width: 320px;
+      min-height: 200px;
+      border-radius: var(--card-radius);
+      overflow: hidden;
       background: transparent;
+      box-shadow: var(--card-shadow);
       pointer-events: none;
-      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
-      clip-path: inset(var(--initial-inset) round var(--initial-radius));
     }
 
-    .visual img{
-      display:block;
+    .visual .base{
+      position:absolute;
+      inset:0;
       width:100%;
       height:100%;
       object-fit:cover;
-      /* default object-position center; JS will set 80/20 vertical bias when needed */
-      object-position: 50% 50%;
-      -webkit-user-drag: none;
-      user-select: none;
-      pointer-events: none;
-      transform-origin: center center;
+      object-position: 50% 80%;
+      -webkit-user-drag:none;
+      user-select:none;
+      display:block;
+      z-index:1;
+      pointer-events:none;
     }
 
-    @media (max-width: 640px){
+    .divider{
+      position:absolute;
+      top:0;
+      bottom:0;
+      left:50%;
+      width: var(--divider-width);
+      background: var(--divider-color);
+      transform: translateX(-50%);
+      z-index:2;
+      pointer-events:none;
+    }
+
+    /* overlays */
+    .overlay{
+      position:absolute;
+      height:auto;
+      z-index:3;
+      pointer-events:none;
+      image-rendering:auto;
+      will-change: transform, width, clip-path;
+    }
+
+    /* left overlay uses its own offset vars */
+    .overlay-left{
+      left: var(--overlay-left-left);
+      bottom: var(--overlay-bottom-left);
+      width: calc(var(--overlay-base-width-left) * var(--overlay-scale-left));
+      max-width: var(--overlay-max-width-left);
+      clip-path: inset(0 50% 0 0);
+      z-index:4;
+      transform: translateX(-50%) translate(var(--overlay-offset-x-left, 0px), var(--overlay-offset-y-left, 0px));
+    }
+
+    /* right overlay uses its own offset vars and is NOT clipped */
+    .overlay-right{
+      left: var(--overlay-left-right);
+      bottom: var(--overlay-bottom-right);
+      width: calc(var(--overlay-base-width-right) * var(--overlay-scale-right));
+      max-width: var(--overlay-max-width-right);
+      clip-path: none;
+      z-index:3;
+      transform: translateX(-50%) translate(var(--overlay-offset-x-right, 0px), var(--overlay-offset-y-right, 0px));
+    }
+
+    .below{ background:#000; color:#fff; padding:48px 4vw; }
+    .below .container{ max-width:900px; margin:0 auto; font-size:1.05rem; line-height:1.6; }
+    .below h2{ margin-top:0; font-size:1.6rem; }
+
+    @media (max-width:720px){
       :root{
-        --initial-inset: clamp(6px, 1.8vh, 2.6vw);
-        --initial-radius: 20px;
-        --collapse-threshold: 0.28;
+        --pad-side: clamp(12px, 3vh, 18px);
+        --card-radius: 18px;
+        --overlay-base-width-left: 46%;
+        --overlay-base-width-right: 46%;
+        --overlay-bottom-left: 2%;
+        --overlay-bottom-right: 2%;
         --dead-zone: 80px;
       }
     }
 
     @media (prefers-reduced-motion: reduce){
-      .visual{
-        transition: none !important;
-        will-change: auto !important;
-      }
-    }
-
-    /* BELOW content for scrolling demo */
-    .below{ background:#000; color:#fff; padding:48px 4vw; }
-    .below .container{ max-width:900px; margin:0 auto; font-size:1.05rem; line-height:1.6; }
-    .below h2{ margin-top:0; font-size:1.6rem; }
-
-    @media (max-width: 900px){
-      .below{ padding:36px 4vw; }
+      .visual{ transition: none !important; will-change: auto !important; }
     }
   </style>
 
   <script type="module">
-  (() => {
-    // Smoother reveal using clip-path; half inset; overlays removed.
-    // Also implements 80/20 vertical crop bias when the image must be cropped vertically.
-
-    const PREFERS_REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
+  (function(){
     const root = document.documentElement;
-    const rootStyle = getComputedStyle(root);
-    const DEAD_ZONE = parseFloat(rootStyle.getPropertyValue('--dead-zone')) || 100;
-    const COLLAPSE_FRAC = parseFloat(rootStyle.getPropertyValue('--collapse-threshold')) || 0.4;
+    const visual = document.getElementById('heroVisual');
+    const baseImg = document.getElementById('heroBase');
+    const overlayLeft = document.getElementById('heroOverlayLeft');
+    const overlayRight = document.getElementById('heroOverlayRight');
 
-    const frame = document.querySelector('.frame-hero');
-    const imageWrap = document.querySelector('.image-wrap');
-    const visual = document.querySelector('.visual');
-    const img = document.getElementById('heroImg');
-    if (!frame || !imageWrap || !visual || !img) return;
+    if (!visual || !baseImg) return;
 
-    // helpers to compute CSS var values in px
     function pxFromVar(varName){
       const tmp = document.createElement('div');
       tmp.style.position = 'absolute';
@@ -147,148 +210,144 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       return val;
     }
 
-    function resolvedInsetPx(){ return pxFromVar('--initial-inset'); }
-    function resolvedRadiusPx(){ return parseFloat(getComputedStyle(visual).borderRadius) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--initial-radius')) || 28; }
+    function cfg(){
+      return {
+        dead: parseFloat(getComputedStyle(root).getPropertyValue('--dead-zone')) || 100,
+        finishFrac: parseFloat(getComputedStyle(root).getPropertyValue('--finish-frac')) || 0.38,
+        lerp: parseFloat(getComputedStyle(root).getPropertyValue('--lerp')) || 0.08,
+        cardRadius: parseFloat(getComputedStyle(root).getPropertyValue('--card-radius')) || 28
+      };
+    }
 
-    // cropping bias: if image must be cropped vertically (image taller than container),
-    // move the focal point to keep top area visible: object-position Y = 80% (top bias).
+    function readPadPx(){
+      return {
+        top: pxFromVar('--pad-top'),
+        right: pxFromVar('--pad-right'),
+        bottom: pxFromVar('--pad-bottom'),
+        left: pxFromVar('--pad-left')
+      };
+    }
+
+    function applyClip(top,right,bottom,left,radius){
+      visual.style.clipPath = `inset(${top}px ${right}px ${bottom}px ${left}px round ${radius}px)`;
+      visual.style.borderRadius = `${radius}px`;
+    }
+
     function applyCropBias(){
-      // natural image aspect vs container aspect
-      const imgW = img.naturalWidth || img.width || 1;
-      const imgH = img.naturalHeight || img.height || 1;
+      const imgW = baseImg.naturalWidth || baseImg.width || 1;
+      const imgH = baseImg.naturalHeight || baseImg.height || 1;
       const imageAspect = imgW / imgH;
+      const rect = visual.getBoundingClientRect();
+      const containerAspect = rect.width / Math.max(1, rect.height);
+      if (imageAspect < containerAspect) baseImg.style.objectPosition = '50% 80%';
+      else baseImg.style.objectPosition = '50% 50%';
+    }
 
-      const wrapRect = imageWrap.getBoundingClientRect();
-      const containerAspect = wrapRect.width / Math.max(1, wrapRect.height);
-
-      // if image aspect < container aspect => vertical crop (image is narrower => needs vertical fit)
-      // Actually, typical check: if imageAspect < containerAspect => image is taller in relation -> vertical crop
-      if (imageAspect < containerAspect){
-        // vertical crop required -> bias towards showing top part (80% Y)
-        img.style.objectPosition = '50% 80%';
-      } else {
-        // horizontal crop or perfect fit -> center
-        img.style.objectPosition = '50% 50%';
+    function applyOverlayStyle(){
+      // update sizes and anchors only — transforms handled by CSS vars directly
+      if (overlayLeft){
+        overlayLeft.style.left = getComputedStyle(root).getPropertyValue('--overlay-left-left') || '50%';
+        overlayLeft.style.bottom = getComputedStyle(root).getPropertyValue('--overlay-bottom-left') || '0%';
+        overlayLeft.style.width = `calc(${getComputedStyle(root).getPropertyValue('--overlay-base-width-left')} * ${getComputedStyle(root).getPropertyValue('--overlay-scale-left')})`;
+        overlayLeft.style.maxWidth = getComputedStyle(root).getPropertyValue('--overlay-max-width-left') || '48%';
+      }
+      if (overlayRight){
+        overlayRight.style.left = getComputedStyle(root).getPropertyValue('--overlay-left-right') || '50%';
+        overlayRight.style.bottom = getComputedStyle(root).getPropertyValue('--overlay-bottom-right') || '0%';
+        overlayRight.style.width = `calc(${getComputedStyle(root).getPropertyValue('--overlay-base-width-right')} * ${getComputedStyle(root).getPropertyValue('--overlay-scale-right')})`;
+        overlayRight.style.maxWidth = getComputedStyle(root).getPropertyValue('--overlay-max-width-right') || '48%';
       }
     }
 
-    // initial state values
-    let insetPx = resolvedInsetPx();
-    let initialRadius = resolvedRadiusPx();
-
-    function applyClip(inset, radius){
-      visual.style.clipPath = `inset(${inset}px round ${radius}px)`;
-      visual.style.borderRadius = `${radius}px`;
-      visual.style.inset = `${inset}px`;
-    }
-
-    // smoother animation parameters
-    let target = 0;
-    let current = 0;
-    let ticking = false;
-    const LERP = 0.06; // lower => smoother, slower follow (per request)
-    function easeOutSmooth(t){ return 1 - Math.pow(1 - t, 4); } // smoother easing curve
-
-    // compute target progress (0..1) depending on scroll with dead-zone
+    // scroll-driven reveal
+    let current = 0, target = 0, ticking = false;
+    function easeOut(t){ return 1 - Math.pow(1 - t, 4); }
     function computeTarget(){
-      const scrollY = window.scrollY || window.pageYOffset;
-      const start = DEAD_ZONE;
-      const vh = window.innerHeight;
-      const threshold = Math.max(1, vh * COLLAPSE_FRAC);
-      let p = (scrollY - start) / threshold;
-      p = Math.max(0, Math.min(1, p));
-      return p;
+      const { dead, finishFrac } = cfg();
+      const y = window.scrollY || window.pageYOffset;
+      const start = dead;
+      const finishPx = Math.max(1, window.innerHeight * finishFrac);
+      let p = (y - start) / finishPx;
+      return Math.max(0, Math.min(1, p));
     }
 
     function applyProgress(p){
-      const eased = easeOutSmooth(p);
-      const curInset = Math.max(0, insetPx * (1 - eased));
-      const curRadius = Math.max(0, initialRadius * (1 - eased));
-      applyClip(curInset, curRadius);
-      const shadowAlpha = 0.45 * (1 - eased);
-      visual.style.boxShadow = `0 18px 40px rgba(0,0,0,${shadowAlpha})`;
-      // When fully revealed, ensure exact final state
+      const eased = easeOut(p);
+      const pad = readPadPx();
+      const radius = cfg().cardRadius;
+
+      const top = pad.top * (1 - eased);
+      const right = pad.right * (1 - eased);
+      const bottom = pad.bottom * (1 - eased);
+      const left = pad.left * (1 - eased);
+      const r = Math.max(0, radius * (1 - eased));
+
+      applyClip(top, right, bottom, left, r);
+      visual.style.boxShadow = `0 18px 40px rgba(0,0,0,${0.45 * (1 - eased)})`;
+
       if (p >= 0.999){
-        applyClip(0, 0);
-        visual.style.boxShadow = `0 0 0 rgba(0,0,0,0)`;
+        applyClip(0,0,0,0,0);
+        visual.style.boxShadow = 'none';
       }
     }
 
     function tick(){
       ticking = false;
-      current = current + (target - current) * LERP;
+      const { lerp } = cfg();
+      current = current + (target - current) * lerp;
       applyProgress(current);
-      if (Math.abs(target - current) > 0.0005){
-        requestTick();
-      }
+      if (Math.abs(target - current) > 0.0005) requestTick();
     }
+    function requestTick(){ if (!ticking){ ticking = true; requestAnimationFrame(tick); } }
+    function onScroll(){ target = computeTarget(); requestTick(); }
+    function onResize(){ applyCropBias(); applyOverlayStyle(); applyProgress(current); }
 
-    function requestTick(){
-      if (!ticking){
-        ticking = true;
-        requestAnimationFrame(tick);
-      }
-    }
-
-    function onScroll(){
-      if (PREFERS_REDUCED) return;
-      target = computeTarget();
-      requestTick();
-    }
-
-    function onResize(){
-      insetPx = resolvedInsetPx();
-      initialRadius = resolvedRadiusPx();
-      applyCropBias();
-      applyProgress(current);
-    }
-
-    // pause while not visible
-    let active = true;
-    const io = new IntersectionObserver(entries => {
-      entries.forEach(en => {
-        active = en.isIntersecting;
-        if (active) requestTick();
-      });
-    }, { threshold: 0 });
-    io.observe(frame);
-
-    // init: compute inset, radius, apply crop bias and initial clip
     function init(){
-      insetPx = resolvedInsetPx();
-      initialRadius = resolvedRadiusPx();
+      const pad = readPadPx();
+      applyClip(pad.top, pad.right, pad.bottom, pad.left, cfg().cardRadius);
       applyCropBias();
+      applyOverlayStyle();
+
       target = computeTarget();
       current = target;
       applyProgress(current);
 
-      window.addEventListener('scroll', onScroll, { passive: true });
-      window.addEventListener('resize', onResize, { passive: true });
+      window.addEventListener('scroll', onScroll, { passive:true });
+      window.addEventListener('resize', onResize, { passive:true });
     }
 
-    if (document.readyState === 'loading'){
-      document.addEventListener('DOMContentLoaded', () => {
-        // ensure image natural sizes are available
-        if (!img.complete) {
-          img.addEventListener('load', init, { once: true });
-        } else {
-          init();
-        }
-      });
-    } else {
-      if (!img.complete) {
-        img.addEventListener('load', init, { once: true });
-      } else {
-        init();
-      }
-    }
+    if (!baseImg.complete) baseImg.addEventListener('load', init, { once:true });
+    else init();
 
-    // Expose a tiny API to tweak runtime values in console (optional)
+    // runtime API (left & right offsets now set CSS vars directly)
     window.__hero = {
-      setDead(px){ document.documentElement.style.setProperty('--dead-zone', `${px}px`); },
-      setInset(px){ document.documentElement.style.setProperty('--initial-inset', `${px}px`); onResize(); },
-      setRadius(px){ document.documentElement.style.setProperty('--initial-radius', `${px}px`); onResize(); }
+      setDead(px){ root.style.setProperty('--dead-zone', `${px}px`); },
+      setPadSides(px){ root.style.setProperty('--pad-side', `${px}px`); root.style.setProperty('--pad-top', `${px}px`); root.style.setProperty('--pad-left', `${px}px`); root.style.setProperty('--pad-right', `${px}px`); root.style.setProperty('--pad-bottom', `calc(${px}px * 2)`); onResize(); },
+      setRadius(px){ root.style.setProperty('--card-radius', `${px}px`); onResize(); },
+
+      // left
+      setOverlayLeftScale(scale){ root.style.setProperty('--overlay-scale-left', scale); applyOverlayStyle(); },
+      setOverlayLeftBaseWidth(pct){ root.style.setProperty('--overlay-base-width-left', pct); applyOverlayStyle(); },
+      setOverlayLeftPos(leftPct, bottomVal){ if (leftPct) root.style.setProperty('--overlay-left-left', leftPct); if (bottomVal) root.style.setProperty('--overlay-bottom-left', bottomVal); applyOverlayStyle(); },
+      setOverlayLeftOffset(xPx,yPx){ root.style.setProperty('--overlay-offset-x-left', `${xPx}px`); root.style.setProperty('--overlay-offset-y-left', `${yPx}px`); /* CSS transform picks this up automatically */ },
+
+      // right
+      setOverlayRightScale(scale){ root.style.setProperty('--overlay-scale-right', scale); applyOverlayStyle(); },
+      setOverlayRightBaseWidth(pct){ root.style.setProperty('--overlay-base-width-right', pct); applyOverlayStyle(); },
+      setOverlayRightPos(leftPct, bottomVal){ if (leftPct) root.style.setProperty('--overlay-left-right', leftPct); if (bottomVal) root.style.setProperty('--overlay-bottom-right', bottomVal); applyOverlayStyle(); },
+      setOverlayRightOffset(xPx,yPx){ root.style.setProperty('--overlay-offset-x-right', `${xPx}px`); root.style.setProperty('--overlay-offset-y-right', `${yPx}px`); /* CSS transform picks this up automatically */ },
+
+      // compatibility
+      setOverlayScale(scale){ root.style.setProperty('--overlay-scale-left', scale); applyOverlayStyle(); },
+      setOverlayBaseWidth(pct){ root.style.setProperty('--overlay-base-width-left', pct); applyOverlayStyle(); },
+      setOverlayLeft(pct){ root.style.setProperty('--overlay-left-left', pct); applyOverlayStyle(); },
+
+      hideDivider(){ const d = document.querySelector('.divider'); if (d) d.style.opacity = '0'; },
+      showDivider(){ const d = document.querySelector('.divider'); if (d) d.style.opacity = '1'; },
+      debug(){ console.log('left:', {base:getComputedStyle(root).getPropertyValue('--overlay-base-width-left'), scale:getComputedStyle(root).getPropertyValue('--overlay-scale-left'), left:getComputedStyle(root).getPropertyValue('--overlay-left-left'), ox:getComputedStyle(root).getPropertyValue('--overlay-offset-x-left')}, 'right:', {base:getComputedStyle(root).getPropertyValue('--overlay-base-width-right'), scale:getComputedStyle(root).getPropertyValue('--overlay-scale-right'), left:getComputedStyle(root).getPropertyValue('--overlay-left-right'), ox:getComputedStyle(root).getPropertyValue('--overlay-offset-x-right')}); }
     };
+
+    console.info('hero API -> window.__hero (use setOverlayLeftOffset/setOverlayRightOffset etc.)');
   })();
   </script>
 </BaseLayout>
