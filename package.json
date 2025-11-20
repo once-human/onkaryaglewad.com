@@ -9,14 +9,14 @@
     "preview": "astro preview"
   },
   "dependencies": {
-    "astro": "^5.15.9",
+    "astro": "^4.16.19",
     "svelte": "^4.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "lottie-web": "^5.11.0"
   },
   "devDependencies": {
-    "@astrojs/svelte": "^5.0.0",
-    "@astrojs/react": "^4.0.0"
+    "@astrojs/svelte": "^5.7.3",
+    "@astrojs/react": "^2.0.0"
   }
 }
