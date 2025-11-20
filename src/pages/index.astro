@@ -3,7 +3,40 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout>
-  <main style="display:flex;align-items:center;justify-content:center;height:100vh;">
-    <h1 style="margin:0;color:#ffffff;font-size:clamp(24px,6vw,64px);font-weight:600;letter-spacing:-0.02em;">Hey, I'm Onkar Yaglewad</h1>
+  <main class="frame">
+    <div class="image-wrap">
+      <!-- Place your image at public/assets/head.png -->
+      <img src="/assets/head.png" alt="Onkar Yaglewad" />
+    </div>
   </main>
+
+  <style>
+    .frame{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:100vh;
+      padding:24px; /* gap on all 4 sides */
+      box-sizing:border-box;
+    }
+
+    .image-wrap{
+      width:100%;
+      max-width:1200px; /* don't grow too wide on large screens */
+      height:calc(100vh - 48px); /* account for vertical padding */
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .image-wrap img{
+      display:block;
+      width:100%;
+      height:auto;
+      max-height:100%;
+      border-radius:12px;
+      object-fit:contain; /* preserve aspect ratio, no stretching */
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+    }
+  </style>
 </BaseLayout>
