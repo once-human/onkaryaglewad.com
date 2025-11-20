@@ -3,30 +3,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout>
-  <main class="frame-hero">
+  <main class="frame-hero" id="frameHero">
     <div class="hero-inner" id="heroInner">
-      <div class="visual" id="heroVisual">
+      <div class="visual" id="heroVisual" aria-hidden="false">
         <img class="base" id="heroBase" src="/assets/head.webp" alt="Onkar Yaglewad" />
-        <div class="divider" aria-hidden="true"></div>
+        <!-- subtle thin divider visual (kept very light) -->
+        <div class="divider" id="dividerVisual" aria-hidden="true"></div>
       </div>
 
-      <!-- left: sketch overlay (clipped to left half) -->
-      <img
-        class="overlay overlay-left"
-        id="heroOverlayLeft"
-        src="/assets/head_overlay_sketch.png"
-        alt="sketch-overlay"
-        aria-hidden="true"
-      />
+      <!-- LEFT SVG (sketch) wrapped in full-width clip wrapper to align clipping with divider -->
+      <div class="overlay-wrap overlay-wrap-left" aria-hidden="true">
+        <img class="overlay overlay-left" id="heroOverlayLeft" src="/assets/head_overlay_sketch.svg" alt="sketch-overlay" draggable="false" />
+      </div>
 
-      <!-- right: real overlay (full) -->
-      <img
-        class="overlay overlay-right"
-        id="heroOverlayRight"
-        src="/assets/head_overlay_real.png"
-        alt="real-overlay"
-        aria-hidden="true"
-      />
+      <!-- RIGHT SVG (real) wrapped in full-width clip wrapper -->
+      <div class="overlay-wrap overlay-wrap-right" aria-hidden="true">
+        <img class="overlay overlay-right" id="heroOverlayRight" src="/assets/head_overlay_real.svg" alt="real-overlay" draggable="false" />
+      </div>
+
+      <!-- draggable handle (visible near center). Premium bubble attached inside -->
+      <div class="divider-handle" id="dividerHandle" role="separator" tabindex="0" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" title="Drag to reveal">
+        <div class="bubble" id="dividerBubble" aria-hidden="true">50%</div>
+      </div>
     </div>
   </main>
 
@@ -48,125 +46,138 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       --card-radius: 28px;
 
-      --dead-zone: 100px;
-      --finish-frac: 0.38;
-      --lerp: 0.08;
-
-      /* left (sketch) */
+      /* user-tuned overlay values preserved */
       --overlay-base-width-left: 34%;
-      --overlay-scale-left: 1.18;
+      --overlay-scale-left: 1.24;
       --overlay-max-width-left: 48%;
       --overlay-left-left: 50.6%;
       --overlay-bottom-left: -5.2%;
       --overlay-offset-x-left: 0px;
-      --overlay-offset-y-left: 0px;
+      --overlay-offset-y-left: 12px; /* lowered by default */
 
-      /* right (real) */
-      --overlay-base-width-right: 34.09%;
-      --overlay-scale-right: 1.25;
+      --overlay-base-width-right: 34%;
+      --overlay-scale-right: 1.314;
       --overlay-max-width-right: 52%;
       --overlay-left-right: 50.6%;
-      --overlay-bottom-right: -7.38%;
-      --overlay-offset-x-right: 8px;
-      --overlay-offset-y-right: 0px;
+      --overlay-bottom-right: -7%;
+      --overlay-offset-x-right: 0px;
+      --overlay-offset-y-right: 14.5px; /* lowered by default */
 
-      --divider-color: rgba(255,255,255,0.12);
-      --divider-width: 4px;
+      /* divider position (0..100) */
+      --divider-pos: 48%;
+
+      /* subtle divider look (thin) */
+      --divider-width: 1px;
+      --divider-color: rgba(255,255,255,0.45);
+
+      /* handle & bubble */
+      --handle-width: 36px;
+      --handle-height: 80px;
+      --bubble-scale: 1;
+      --bubble-bg: rgba(255,255,255,0.92);
+      --bubble-color: #0b0b0b;
 
       --page-bg: #0b0b0b;
       --card-shadow: 0 18px 40px rgba(0,0,0,0.45);
+      --easing: cubic-bezier(.18,.9,.32,1);
     }
 
-    html,body{ height:100%; margin:0; background:var(--page-bg); color:#fff; font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial; }
+    html,body{ height:100%; margin:0; background:var(--page-bg); color:#fff; font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial;}
     *{ box-sizing:border-box; }
 
-    .frame-hero{
-      height:100vh;
-      width:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      position:relative;
-      overflow:hidden;
-    }
+  .frame-hero{ height:100vh; width:100%; display:flex; align-items:center; justify-content:center; position:relative; overflow:visible; }
+    .hero-inner{ position:absolute; inset: var(--pad-top) var(--pad-right) var(--pad-bottom) var(--pad-left); overflow: visible; pointer-events:auto; -webkit-tap-highlight-color: transparent; }
+    .visual{ position: relative; width:100%; height:100%; min-width:320px; min-height:200px; border-radius: var(--card-radius); overflow:hidden; box-shadow: var(--card-shadow); pointer-events:none; user-select:none; }
 
-    .hero-inner{
-      position:absolute;
-      inset: var(--pad-top) var(--pad-right) var(--pad-bottom) var(--pad-left);
-      overflow: visible;
-      pointer-events:none;
-    }
+    .visual .base{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 80%; -webkit-user-drag:none; user-select:none; display:block; z-index:0; pointer-events:none; }
 
-    .visual{
-      position: relative;
-      width: 100%;
-      height: 100%;
-      min-width: 320px;
-      min-height: 200px;
-      border-radius: var(--card-radius);
-      overflow: hidden;
-      background: transparent;
-      box-shadow: var(--card-shadow);
-      pointer-events: none;
-    }
-
-    .visual .base{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      object-position: 50% 80%;
-      -webkit-user-drag:none;
-      user-select:none;
-      display:block;
-      z-index:1;
-      pointer-events:none;
-    }
-
+    /* subtle divider visual, very thin */
     .divider{
-      position:absolute;
-      top:0;
-      bottom:0;
-      left:50%;
-      width: var(--divider-width);
-      background: var(--divider-color);
+      position:absolute; top:0; bottom:0;
+      left: var(--divider-pos);
       transform: translateX(-50%);
+      width: var(--divider-width);
+      border-radius: 1px;
       z-index:2;
       pointer-events:none;
+      background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.55) 22%, var(--divider-color) 50%, rgba(255,255,255,0.55) 78%, rgba(255,255,255,0) 100%);
+      opacity: 0.7;
+      mix-blend-mode: screen;
+      transition: opacity 260ms var(--easing), left 180ms var(--easing);
     }
 
-    /* overlays */
-    .overlay{
-      position:absolute;
-      height:auto;
-      z-index:3;
-      pointer-events:none;
-      image-rendering:auto;
-      will-change: transform, width, clip-path;
-    }
+   /* Divider, handle and bubble are intentionally visible so users see the
+     split and the percentage bubble. The handle appears near center and the
+     bubble is shown during hover/drag. */
 
-    /* left overlay uses its own offset vars */
+    .overlay{ position:absolute; height:auto; z-index:5; pointer-events:none; will-change:transform, width; -webkit-user-drag:none; user-select:none; }
+
+    /* Wrapper that spans the full hero width/height and is clipped using --divider-pos.
+       Using a full-width wrapper guarantees that the percentage divider aligns for
+       both sides and prevents subpixel gaps when the divider moves near edges. */
+    .overlay-wrap{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
+
+   /* allow vertical overflow beyond the hero box so overlays can extend into the
+     black area below/above while keeping the horizontal split at --divider-pos */
+   .overlay-wrap-left{ z-index:8; clip-path: polygon(0 -50%, var(--divider-pos) -50%, var(--divider-pos) 150%, 0 150%); }
+   .overlay-wrap-right{ z-index:6; clip-path: polygon(var(--divider-pos) -50%, 100% -50%, 100% 150%, var(--divider-pos) 150%); }
+
+    /* Image inside the wrapper: positioned relative to the full hero box so it keeps the intended offsets */
     .overlay-left{
       left: var(--overlay-left-left);
       bottom: var(--overlay-bottom-left);
       width: calc(var(--overlay-base-width-left) * var(--overlay-scale-left));
       max-width: var(--overlay-max-width-left);
-      clip-path: inset(0 50% 0 0);
-      z-index:4;
-      transform: translateX(-50%) translate(var(--overlay-offset-x-left, 0px), var(--overlay-offset-y-left, 0px));
+      transform: translateX(-50%) translate(var(--overlay-offset-x-left,0px), var(--overlay-offset-y-left,0px));
+      z-index:8;
     }
 
-    /* right overlay uses its own offset vars and is NOT clipped */
     .overlay-right{
       left: var(--overlay-left-right);
       bottom: var(--overlay-bottom-right);
       width: calc(var(--overlay-base-width-right) * var(--overlay-scale-right));
       max-width: var(--overlay-max-width-right);
-      clip-path: none;
-      z-index:3;
-      transform: translateX(-50%) translate(var(--overlay-offset-x-right, 0px), var(--overlay-offset-y-right, 0px));
+      transform: translateX(-50%) translate(var(--overlay-offset-x-right,0px), var(--overlay-offset-y-right,0px));
+      z-index:6;
     }
+
+    /* handle: mostly hidden; appears when near center or during drag */
+    .divider-handle{
+      position:absolute;
+      left: var(--divider-pos);
+      top:50%;
+      transform: translate(-50%, -50%) scale(1);
+      width: var(--handle-width);
+      height: var(--handle-height);
+      display:flex; align-items:center; justify-content:center;
+      border-radius:8px; pointer-events:none; opacity:0; z-index:12;
+      transition: opacity 220ms cubic-bezier(.2,.9,.25,1), transform 180ms cubic-bezier(.2,.9,.25,1);
+      user-select:none;
+    }
+    .divider-handle.active{ opacity:1; pointer-events:auto; cursor: ew-resize; transform: translate(-50%, -50%) scale(1.02); }
+
+    /* premium bubble attached to handle */
+    .divider-handle .bubble{
+      position:absolute;
+      bottom: calc(100% + 10px);
+      left:50%;
+      transform: translateX(-50%) translateY(6px) scale(var(--bubble-scale));
+      background: var(--bubble-bg);
+      color: var(--bubble-color);
+      padding: 6px 9px;
+      font-size: 0.85rem;
+      border-radius: 999px;
+      box-shadow: 0 10px 30px rgba(6,12,20,0.5);
+      white-space:nowrap;
+      transform-origin: center bottom;
+      transition: transform 260ms cubic-bezier(.14,.9,.24,1), opacity 200ms ease;
+      opacity:0;
+      pointer-events:none;
+    }
+    .divider-handle.show-bubble .bubble{ opacity:1; transform: translateX(-50%) translateY(0) scale(1); }
+
+    /* unselectable */
+    img, .overlay, .visual, .divider-handle { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
 
     .below{ background:#000; color:#fff; padding:48px 4vw; }
     .below .container{ max-width:900px; margin:0 auto; font-size:1.05rem; line-height:1.6; }
@@ -174,180 +185,241 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     @media (max-width:720px){
       :root{
-        --pad-side: clamp(12px, 3vh, 18px);
+        --pad-side: clamp(12px,3vh,18px);
         --card-radius: 18px;
         --overlay-base-width-left: 46%;
         --overlay-base-width-right: 46%;
         --overlay-bottom-left: 2%;
         --overlay-bottom-right: 2%;
-        --dead-zone: 80px;
       }
+      .divider-handle{ width:28px; height:64px; }
     }
 
     @media (prefers-reduced-motion: reduce){
-      .visual{ transition: none !important; will-change: auto !important; }
+      .divider-handle{ transition:none; }
+      .divider-handle .bubble{ transition:none; }
     }
   </style>
 
   <script type="module">
   (function(){
-    const root = document.documentElement;
-    const visual = document.getElementById('heroVisual');
-    const baseImg = document.getElementById('heroBase');
-    const overlayLeft = document.getElementById('heroOverlayLeft');
-    const overlayRight = document.getElementById('heroOverlayRight');
+  const root = document.documentElement;
+  const heroInner = document.getElementById('heroInner');
+  const overlayLeft = document.getElementById('heroOverlayLeft');
+  const overlayRight = document.getElementById('heroOverlayRight');
+  const handle = document.getElementById('dividerHandle');
+  const bubble = document.getElementById('dividerBubble');
+  const divider = document.getElementById('dividerVisual');
 
-    if (!visual || !baseImg) return;
+  if (!heroInner || !overlayLeft || !overlayRight || !handle || !bubble || !divider) return;
 
-    function pxFromVar(varName){
-      const tmp = document.createElement('div');
-      tmp.style.position = 'absolute';
-      tmp.style.visibility = 'hidden';
-      tmp.style.width = `var(${varName})`;
-      document.body.appendChild(tmp);
-      const val = parseFloat(getComputedStyle(tmp).width) || 0;
-      document.body.removeChild(tmp);
-      return val;
+    // helpers
+    const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+    const cssToNum = s => parseFloat(String(s || '50').replace('%','')) || 50;
+    function getDivider(){ return cssToNum(getComputedStyle(root).getPropertyValue('--divider-pos') || '50'); }
+    function setDivider(v){
+      const p = clamp(v, 0, 100);
+      root.style.setProperty('--divider-pos', `${p}%`);
+      handle.style.left = `${p}%`;
+      handle.setAttribute('aria-valuenow', Math.round(p));
+      updateBubble(p);
+      // fade divider towards edges: fully visible at center (50%), invisible at 0%/100%
+      const fade = 1 - (Math.abs(p - 50) / 50);
+      const base = 0.7; // base CSS opacity
+      if (divider) divider.style.opacity = String(clamp(fade * base, 0, base));
     }
 
-    function cfg(){
-      return {
-        dead: parseFloat(getComputedStyle(root).getPropertyValue('--dead-zone')) || 100,
-        finishFrac: parseFloat(getComputedStyle(root).getPropertyValue('--finish-frac')) || 0.38,
-        lerp: parseFloat(getComputedStyle(root).getPropertyValue('--lerp')) || 0.08,
-        cardRadius: parseFloat(getComputedStyle(root).getPropertyValue('--card-radius')) || 28
-      };
+    // update bubble text: show % of RIGHT visible
+    function updateBubble(divPos){
+      const rightPct = Math.round(clamp(100 - divPos, 0, 100));
+      bubble.textContent = `${rightPct}%`;
     }
 
-    function readPadPx(){
-      return {
-        top: pxFromVar('--pad-top'),
-        right: pxFromVar('--pad-right'),
-        bottom: pxFromVar('--pad-bottom'),
-        left: pxFromVar('--pad-left')
-      };
-    }
-
-    function applyClip(top,right,bottom,left,radius){
-      visual.style.clipPath = `inset(${top}px ${right}px ${bottom}px ${left}px round ${radius}px)`;
-      visual.style.borderRadius = `${radius}px`;
-    }
-
-    function applyCropBias(){
-      const imgW = baseImg.naturalWidth || baseImg.width || 1;
-      const imgH = baseImg.naturalHeight || baseImg.height || 1;
-      const imageAspect = imgW / imgH;
-      const rect = visual.getBoundingClientRect();
-      const containerAspect = rect.width / Math.max(1, rect.height);
-      if (imageAspect < containerAspect) baseImg.style.objectPosition = '50% 80%';
-      else baseImg.style.objectPosition = '50% 50%';
-    }
-
-    function applyOverlayStyle(){
-      // update sizes and anchors only — transforms handled by CSS vars directly
-      if (overlayLeft){
-        overlayLeft.style.left = getComputedStyle(root).getPropertyValue('--overlay-left-left') || '50%';
-        overlayLeft.style.bottom = getComputedStyle(root).getPropertyValue('--overlay-bottom-left') || '0%';
-        overlayLeft.style.width = `calc(${getComputedStyle(root).getPropertyValue('--overlay-base-width-left')} * ${getComputedStyle(root).getPropertyValue('--overlay-scale-left')})`;
-        overlayLeft.style.maxWidth = getComputedStyle(root).getPropertyValue('--overlay-max-width-left') || '48%';
-      }
-      if (overlayRight){
-        overlayRight.style.left = getComputedStyle(root).getPropertyValue('--overlay-left-right') || '50%';
-        overlayRight.style.bottom = getComputedStyle(root).getPropertyValue('--overlay-bottom-right') || '0%';
-        overlayRight.style.width = `calc(${getComputedStyle(root).getPropertyValue('--overlay-base-width-right')} * ${getComputedStyle(root).getPropertyValue('--overlay-scale-right')})`;
-        overlayRight.style.maxWidth = getComputedStyle(root).getPropertyValue('--overlay-max-width-right') || '48%';
-      }
-    }
-
-    // scroll-driven reveal
-    let current = 0, target = 0, ticking = false;
-    function easeOut(t){ return 1 - Math.pow(1 - t, 4); }
-    function computeTarget(){
-      const { dead, finishFrac } = cfg();
-      const y = window.scrollY || window.pageYOffset;
-      const start = dead;
-      const finishPx = Math.max(1, window.innerHeight * finishFrac);
-      let p = (y - start) / finishPx;
-      return Math.max(0, Math.min(1, p));
-    }
-
-    function applyProgress(p){
-      const eased = easeOut(p);
-      const pad = readPadPx();
-      const radius = cfg().cardRadius;
-
-      const top = pad.top * (1 - eased);
-      const right = pad.right * (1 - eased);
-      const bottom = pad.bottom * (1 - eased);
-      const left = pad.left * (1 - eased);
-      const r = Math.max(0, radius * (1 - eased));
-
-      applyClip(top, right, bottom, left, r);
-      visual.style.boxShadow = `0 18px 40px rgba(0,0,0,${0.45 * (1 - eased)})`;
-
-      if (p >= 0.999){
-        applyClip(0,0,0,0,0);
-        visual.style.boxShadow = 'none';
-      }
-    }
-
+    // animation smoothing: slow LERP for premium feel
+    let animCur = getDivider();
+    let animTarget = animCur;
+    let animTicking = false;
+    let defaultLerp = 0.045; // much slower, buttery
+    let activeLerp = defaultLerp;
+    let snapLerp = 0.18; // temporarily used for snap
     function tick(){
-      ticking = false;
-      const { lerp } = cfg();
-      current = current + (target - current) * lerp;
-      applyProgress(current);
-      if (Math.abs(target - current) > 0.0005) requestTick();
+      animTicking = false;
+      animCur = animCur + (animTarget - animCur) * activeLerp;
+      setDivider(animCur);
+      if (Math.abs(animTarget - animCur) > 0.02) requestAnim();
     }
-    function requestTick(){ if (!ticking){ ticking = true; requestAnimationFrame(tick); } }
-    function onScroll(){ target = computeTarget(); requestTick(); }
-    function onResize(){ applyCropBias(); applyOverlayStyle(); applyProgress(current); }
+    function requestAnim(){ if (!animTicking){ animTicking = true; requestAnimationFrame(tick); } }
 
-    function init(){
-      const pad = readPadPx();
-      applyClip(pad.top, pad.right, pad.bottom, pad.left, cfg().cardRadius);
-      applyCropBias();
-      applyOverlayStyle();
+    // Auto-follow behavior: REVERSED direction
+    // Pointer right -> reveal more LEFT (divider moves left). We'll compute as animTarget = 100 - pct
+    let autoEnabled = true;
+    const handleActiveZone = 10; // percent near center where handle appears & drag allowed
+    let pointerInside = false;
+    let dragging = false;
+    let pointerId = null;
 
-      target = computeTarget();
-      current = target;
-      applyProgress(current);
-
-      window.addEventListener('scroll', onScroll, { passive:true });
-      window.addEventListener('resize', onResize, { passive:true });
+    function clientXToPercent(clientX){
+      const r = heroInner.getBoundingClientRect();
+      const x = clamp(clientX - r.left, 0, r.width);
+      return (x / r.width) * 100;
     }
 
-    if (!baseImg.complete) baseImg.addEventListener('load', init, { once:true });
-    else init();
+    // pointer move: set animTarget to reversed mapping
+    function onPointerMove(e){
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      if (clientX == null) return;
+      pointerInside = true;
+      const pct = clientXToPercent(clientX);
 
-    // runtime API (left & right offsets now set CSS vars directly)
-    window.__hero = {
-      setDead(px){ root.style.setProperty('--dead-zone', `${px}px`); },
-      setPadSides(px){ root.style.setProperty('--pad-side', `${px}px`); root.style.setProperty('--pad-top', `${px}px`); root.style.setProperty('--pad-left', `${px}px`); root.style.setProperty('--pad-right', `${px}px`); root.style.setProperty('--pad-bottom', `calc(${px}px * 2)`); onResize(); },
-      setRadius(px){ root.style.setProperty('--card-radius', `${px}px`); onResize(); },
+      if (!dragging && autoEnabled){
+        // reversed mapping: higher pointer pct -> smaller divider value (show left)
+        const reversed = 100 - pct;
+        animTarget = clamp(reversed, 0, 100);
+        requestAnim();
+      }
 
-      // left
-      setOverlayLeftScale(scale){ root.style.setProperty('--overlay-scale-left', scale); applyOverlayStyle(); },
-      setOverlayLeftBaseWidth(pct){ root.style.setProperty('--overlay-base-width-left', pct); applyOverlayStyle(); },
-      setOverlayLeftPos(leftPct, bottomVal){ if (leftPct) root.style.setProperty('--overlay-left-left', leftPct); if (bottomVal) root.style.setProperty('--overlay-bottom-left', bottomVal); applyOverlayStyle(); },
-      setOverlayLeftOffset(xPx,yPx){ root.style.setProperty('--overlay-offset-x-left', `${xPx}px`); root.style.setProperty('--overlay-offset-y-left', `${yPx}px`); /* CSS transform picks this up automatically */ },
+      // show handle only when pointer near center area
+      const nearCenter = Math.abs(pct - 50) <= handleActiveZone;
+      if (nearCenter) {
+        handle.classList.add('active');
+      } else {
+        handle.classList.remove('active');
+      }
 
-      // right
-      setOverlayRightScale(scale){ root.style.setProperty('--overlay-scale-right', scale); applyOverlayStyle(); },
-      setOverlayRightBaseWidth(pct){ root.style.setProperty('--overlay-base-width-right', pct); applyOverlayStyle(); },
-      setOverlayRightPos(leftPct, bottomVal){ if (leftPct) root.style.setProperty('--overlay-left-right', leftPct); if (bottomVal) root.style.setProperty('--overlay-bottom-right', bottomVal); applyOverlayStyle(); },
-      setOverlayRightOffset(xPx,yPx){ root.style.setProperty('--overlay-offset-x-right', `${xPx}px`); root.style.setProperty('--overlay-offset-y-right', `${yPx}px`); /* CSS transform picks this up automatically */ },
+      // show bubble while pointer inside
+      if (pointerInside) {
+        handle.classList.add('show-bubble');
+      }
+    }
 
-      // compatibility
-      setOverlayScale(scale){ root.style.setProperty('--overlay-scale-left', scale); applyOverlayStyle(); },
-      setOverlayBaseWidth(pct){ root.style.setProperty('--overlay-base-width-left', pct); applyOverlayStyle(); },
-      setOverlayLeft(pct){ root.style.setProperty('--overlay-left-left', pct); applyOverlayStyle(); },
+    function onPointerLeave(){
+      pointerInside = false;
+      handle.classList.remove('active');
+      // hide bubble
+      handle.classList.remove('show-bubble');
+      // soft snap after small delay
+      scheduleSnap();
+    }
 
-      hideDivider(){ const d = document.querySelector('.divider'); if (d) d.style.opacity = '0'; },
-      showDivider(){ const d = document.querySelector('.divider'); if (d) d.style.opacity = '1'; },
-      debug(){ console.log('left:', {base:getComputedStyle(root).getPropertyValue('--overlay-base-width-left'), scale:getComputedStyle(root).getPropertyValue('--overlay-scale-left'), left:getComputedStyle(root).getPropertyValue('--overlay-left-left'), ox:getComputedStyle(root).getPropertyValue('--overlay-offset-x-left')}, 'right:', {base:getComputedStyle(root).getPropertyValue('--overlay-base-width-right'), scale:getComputedStyle(root).getPropertyValue('--overlay-scale-right'), left:getComputedStyle(root).getPropertyValue('--overlay-left-right'), ox:getComputedStyle(root).getPropertyValue('--overlay-offset-x-right')}); }
-    };
+    // Dragging: allowed only if handle is active (user near center)
+    function startDrag(e){
+      if (!handle.classList.contains('active')) return;
+      dragging = true;
+      pointerId = (e.pointerId !== undefined) ? e.pointerId : null;
+      if (e.pointerId && handle.setPointerCapture){
+        try{ handle.setPointerCapture(e.pointerId); } catch(_){}
+      }
+      animCur = getDivider();
+      animTarget = animCur;
+      setDivider(animCur);
+      window.addEventListener('pointermove', onDragMove, {passive:false});
+      window.addEventListener('pointerup', endDrag, {passive:true});
+      window.addEventListener('touchmove', onDragMove, {passive:false});
+      window.addEventListener('touchend', endDrag, {passive:true});
+      // ensure bubble visible while dragging
+      handle.classList.add('show-bubble','active');
+      e.preventDefault && e.preventDefault();
+    }
 
-    console.info('hero API -> window.__hero (use setOverlayLeftOffset/setOverlayRightOffset etc.)');
+    function onDragMove(e){
+      if (!dragging) return;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      if (clientX == null) return;
+      const pct = clientXToPercent(clientX);
+      // reversed mapping for direct drag as well: drag to right -> show LEFT, so set divider = 100 - pct
+      const reversed = 100 - pct;
+      setDivider(reversed);
+    }
+
+    function endDrag(e){
+      dragging = false;
+      try{ if (pointerId && handle.releasePointerCapture) handle.releasePointerCapture(pointerId); } catch(_){}
+      window.removeEventListener('pointermove', onDragMove);
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('touchmove', onDragMove);
+      window.removeEventListener('touchend', endDrag);
+      // after release, snap softly
+      scheduleSnap(0);
+    }
+
+    // Soft snapping logic: snap after small inactivity or immediately on drag end
+    let snapTimeout = null;
+    function scheduleSnap(delay = 220){
+      if (snapTimeout) clearTimeout(snapTimeout);
+      snapTimeout = setTimeout(()=> {
+        snapTimeout = null;
+        doSnap();
+      }, delay);
+    }
+
+    function doSnap(){
+      const cur = getDivider();
+      // DEFAULT behavior: when the user's cursor isn't found (pointerInside === false)
+      // snap to a balanced default split so neither image fully takes over. The
+      // requested default is 49.9% (left).
+  const DEFAULT_DIVIDER = 49.9; // left side percent (49.9% left / 50.1% right)
+      let target;
+
+      if (!pointerInside && !dragging){
+        // pointer not present -> snap to default balanced split
+        target = DEFAULT_DIVIDER;
+      } else {
+        // otherwise keep the premium snap zones (near edges snap fully, middle snaps half)
+        if (cur < 33) target = 0;
+        else if (cur <= 66) target = 50;
+        else target = 100;
+      }
+
+      // For premium snap: temporarily increase lerp to snapLerp then revert
+      activeLerp = snapLerp;
+      animTarget = target;
+      requestAnim();
+      // revert lerp to default after 650ms
+      setTimeout(()=> { activeLerp = defaultLerp; }, 650);
+      // hide bubble after snap
+      handle.classList.remove('show-bubble');
+    }
+
+    // keyboard nudges (if user focuses handle)
+    function onKey(e){
+      if (!handle.classList.contains('active')) return;
+      if (e.key === 'ArrowLeft'){ setDivider(getDivider() - 2); }
+      if (e.key === 'ArrowRight'){ setDivider(getDivider() + 2); }
+      if (e.key === 'Enter'){ doSnap(); }
+    }
+
+    // initial set & bubble update
+    animCur = getDivider();
+    animTarget = animCur;
+    setDivider(animCur);
+    requestAnim();
+
+    // event wiring
+    heroInner.addEventListener('pointermove', onPointerMove, {passive:true});
+    heroInner.addEventListener('touchmove', onPointerMove, {passive:true});
+    heroInner.addEventListener('pointerleave', onPointerLeave, {passive:true});
+    heroInner.addEventListener('touchend', onPointerLeave, {passive:true});
+
+    handle.addEventListener('pointerdown', startDrag, {passive:false});
+    handle.addEventListener('mousedown', startDrag, {passive:false});
+    handle.addEventListener('touchstart', startDrag, {passive:false});
+    handle.addEventListener('keydown', onKey);
+
+    // API
+    window.__hero = window.__hero || {};
+    Object.assign(window.__hero, {
+      setAutoEnabled(val){ autoEnabled = !!val; },
+      setHandleActiveZone(pct){ /* changes handle visibility threshold (percent) */ root.style.setProperty('--handle-active-zone', pct); /* kept for legacy; JS var still used */ },
+      setDividerPos(pct){ animTarget = clamp(pct,0,100); requestAnim(); },
+      getDividerPos(){ return getDivider(); },
+      setOverlayLeftOffset(x,y){ root.style.setProperty('--overlay-offset-x-left', `${x}px`); root.style.setProperty('--overlay-offset-y-left', `${y}px`); },
+      setOverlayRightOffset(x,y){ root.style.setProperty('--overlay-offset-x-right', `${x}px`); root.style.setProperty('--overlay-offset-y-right', `${y}px`); },
+      setBubbleVisibility(on){ if (on) handle.classList.add('show-bubble'); else handle.classList.remove('show-bubble'); },
+      setLowering(yLeftPx, yRightPx){ if (yLeftPx!=null) root.style.setProperty('--overlay-offset-y-left', `${yLeftPx}px`); if (yRightPx!=null) root.style.setProperty('--overlay-offset-y-right', `${yRightPx}px`); },
+      debug(){ console.log({divider:getDivider(), animTarget, animCur, autoEnabled}); }
+    });
+
+    console.info('Reverse-hover hero ready. Hover right => reveal left (opposite). Use window.__hero methods to tweak.');
   })();
   </script>
 </BaseLayout>
