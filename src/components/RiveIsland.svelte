@@ -4,13 +4,12 @@
   let riveInstance = null;
 
   onMount(async () => {
-    // This is a placeholder demonstrating where you'd initialize Rive.
-    // Example: import('rive-js').then(({ Rive }) => { ... })
-    // We avoid importing rive-js server-side; do it client-side only when this island hydrates.
-
-    const { Rive } = await import('rive-js');
-    // A minimal placeholder Rive setup — replace `riveData` with your .riv URL/ArrayBuffer
+    // Lazy-import Rive at runtime. Use @vite-ignore so Vite doesn't pre-bundle if the package
+    // is not installed yet. If you prefer a specific Rive package, install it (or replace this import).
     try {
+      const pkg = 'rive-js';
+      const mod = await import(/* @vite-ignore */ pkg);
+      const { Rive } = mod;
       riveInstance = new Rive({
         src: 'https://example.com/placeholder.riv',
         canvas: document.createElement('canvas'),
@@ -18,8 +17,9 @@
       });
       container.appendChild(riveInstance.canvas);
     } catch (e) {
-      // If you don't yet have a .riv file, render a friendly fallback
-      container.innerHTML = '<div style="padding:1rem;background:#f0f0f0">Rive placeholder — add your .riv file and tweak this component.</div>';
+      // Graceful fallback if the package isn't installed or import fails
+      container.innerHTML = '<div style="padding:1rem;background:#f0f0f0">Rive placeholder — install a Rive package or update this component.</div>';
+      console.warn('Rive import failed or not installed:', e);
     }
   });
 
