@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import RiveIsland from '../components/RiveIsland.svelte';
+import LottieIsland from '../components/LottieIsland.svelte';
+import AnimatedReact from '../components/AnimatedReact.jsx';
+---
+
+<BaseLayout>
+  <main class="container">
+    <section class="hero">
+      <div class="hero-left">
+        <h1>Onkar Yaglewad</h1>
+        <p>Product Engineer. Portfolio & experiments — lightweight, buttery animations.</p>
+      </div>
+      <div class="hero-right">
+        <!-- Rive and Lottie islands are hydrated only when needed -->
+        <RiveIsland client:visible />
+        <LottieIsland client:idle />
+        <AnimatedReact client:load />
+      </div>
+    </section>
+
+    <section class="content">
+      <h2>Welcome</h2>
+      <p>This site is authored with Astro and uses small, hydratable islands for animations and micro-interactions.</p>
+    </section>
+  </main>
+
+  <style>
+    .container{max-width:1100px;margin:0 auto;padding:2rem}
+    .hero{display:flex;gap:2rem;align-items:center}
+    .hero-left h1{margin:0;font-size:2.25rem}
+    .hero-right{width:320px}
+  </style>
+</BaseLayout>
