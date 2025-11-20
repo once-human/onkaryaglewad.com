@@ -3,40 +3,292 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout>
-  <main class="frame">
-    <div class="image-wrap">
-      <!-- Place your image at public/assets/head.png -->
-      <img src="/assets/head.png" alt="Onkar Yaglewad" />
+  <!-- HERO page: smaller padding, smoother reveal, overlays removed, vertical 80/20 crop bias -->
+  <main class="frame-hero">
+    <div class="image-wrap" aria-hidden="false">
+      <div class="visual" id="heroVisual" aria-hidden="true">
+        <!-- Change the image path if needed -->
+        <img id="heroImg" src="/assets/head.png" alt="Onkar Yaglewad" />
+      </div>
     </div>
   </main>
 
+  <!-- content below so you can test scrolling -->
+  <section class="below">
+    <div class="container">
+      <h2>More about my work</h2>
+      <p>This page includes a text block so you can test the scroll-driven hero animation. Scroll down to see the hero expand to full-bleed.</p>
+
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor.</p>
+      <p>Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat.</p>
+      <p>Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue. Ut in risus volutpat libero pharetra tempor.</p>
+      <p>Curabitur vestibulum aliquam leo. Praesent egestas neque eu enim. In hac habitasse platea dictumst. Fusce a quam. Etiam ut purus mattis mauris sodales aliquam.</p>
+      <p>Nulla facilisi. Integer lacinia sollicitudin massa. Cras metus. Sed aliquet risus a tortor. Integer id quam.</p>
+      <p>Morbi in sem quis dui placerat ornare. Pellentesque odio nisi, euismod in, pharetra a, ultricies in, diam. Sed arcu. Cras consequat.</p>
+      <p>Praesent dapibus, neque id cursus faucibus, tortor neque egestas augue, eu vulputate magna eros eu erat. Aliquam erat volutpat. Nam dui mi, tincidunt quis, accumsan porttitor, facilisis luctus, metus.</p>
+      <p>Phasellus ultrices nulla quis nibh. Quisque a lectus. Donec consectetuer ligula vulputate sem tristique cursus.</p>
+      <p>Nam nulla quam, gravida non, commodo a, sodales sit amet, nisi. Pellentesque fermentum dolor. Aliquam quam lectus, facilisis auctor, ultrices ut, elementum vulputate, nunc.</p>
+    </div>
+  </section>
+
   <style>
-    .frame{
+    :root{
+      /* INSET halved vs previous file (smaller padding) */
+      --initial-inset: clamp(6px, 0.9vh, 1.4vw);
+      --initial-radius: 28px;
+      --collapse-threshold: 0.40; /* fraction of viewport used to finish reveal */
+      --dead-zone: 100px; /* user-set dead zone */
+      --easing: cubic-bezier(.18,.9,.32,1);
+    }
+
+    /* HERO */
+    .frame-hero{
+      height: 100vh;
+      width: 100%;
       display:flex;
       align-items:center;
       justify-content:center;
-      height:100vh;
-      padding:24px; /* gap on all 4 sides */
       box-sizing:border-box;
+      background: #0b0b0b;
+      overflow:hidden;
+      position:relative;
     }
 
     .image-wrap{
-      width:100%;
-      max-width:1200px; /* don't grow too wide on large screens */
-      height:calc(100vh - 48px); /* account for vertical padding */
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      display:block;
+      pointer-events: none;
     }
 
-    .image-wrap img{
+    /* Visual: a single rounded box that clips the image using clip-path.
+       We do NOT scale the image — we reveal it by shrinking the inset.
+       Removed overlays entirely per request. */
+    .visual{
+      position:absolute;
+      inset: var(--initial-inset);
+      border-radius: var(--initial-radius);
+      overflow: clip;
+      will-change: clip-path, border-radius, box-shadow;
+      background: transparent;
+      pointer-events: none;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+      clip-path: inset(var(--initial-inset) round var(--initial-radius));
+    }
+
+    .visual img{
       display:block;
       width:100%;
-      height:auto;
-      max-height:100%;
-      border-radius:12px;
-      object-fit:contain; /* preserve aspect ratio, no stretching */
-      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      height:100%;
+      object-fit:cover;
+      /* default object-position center; JS will set 80/20 vertical bias when needed */
+      object-position: 50% 50%;
+      -webkit-user-drag: none;
+      user-select: none;
+      pointer-events: none;
+      transform-origin: center center;
+    }
+
+    @media (max-width: 640px){
+      :root{
+        --initial-inset: clamp(6px, 1.8vh, 2.6vw);
+        --initial-radius: 20px;
+        --collapse-threshold: 0.28;
+        --dead-zone: 80px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .visual{
+        transition: none !important;
+        will-change: auto !important;
+      }
+    }
+
+    /* BELOW content for scrolling demo */
+    .below{ background:#000; color:#fff; padding:48px 4vw; }
+    .below .container{ max-width:900px; margin:0 auto; font-size:1.05rem; line-height:1.6; }
+    .below h2{ margin-top:0; font-size:1.6rem; }
+
+    @media (max-width: 900px){
+      .below{ padding:36px 4vw; }
     }
   </style>
+
+  <script type="module">
+  (() => {
+    // Smoother reveal using clip-path; half inset; overlays removed.
+    // Also implements 80/20 vertical crop bias when the image must be cropped vertically.
+
+    const PREFERS_REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const root = document.documentElement;
+    const rootStyle = getComputedStyle(root);
+    const DEAD_ZONE = parseFloat(rootStyle.getPropertyValue('--dead-zone')) || 100;
+    const COLLAPSE_FRAC = parseFloat(rootStyle.getPropertyValue('--collapse-threshold')) || 0.4;
+
+    const frame = document.querySelector('.frame-hero');
+    const imageWrap = document.querySelector('.image-wrap');
+    const visual = document.querySelector('.visual');
+    const img = document.getElementById('heroImg');
+    if (!frame || !imageWrap || !visual || !img) return;
+
+    // helpers to compute CSS var values in px
+    function pxFromVar(varName){
+      const tmp = document.createElement('div');
+      tmp.style.position = 'absolute';
+      tmp.style.visibility = 'hidden';
+      tmp.style.width = `var(${varName})`;
+      document.body.appendChild(tmp);
+      const val = parseFloat(getComputedStyle(tmp).width) || 0;
+      document.body.removeChild(tmp);
+      return val;
+    }
+
+    function resolvedInsetPx(){ return pxFromVar('--initial-inset'); }
+    function resolvedRadiusPx(){ return parseFloat(getComputedStyle(visual).borderRadius) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--initial-radius')) || 28; }
+
+    // cropping bias: if image must be cropped vertically (image taller than container),
+    // move the focal point to keep top area visible: object-position Y = 80% (top bias).
+    function applyCropBias(){
+      // natural image aspect vs container aspect
+      const imgW = img.naturalWidth || img.width || 1;
+      const imgH = img.naturalHeight || img.height || 1;
+      const imageAspect = imgW / imgH;
+
+      const wrapRect = imageWrap.getBoundingClientRect();
+      const containerAspect = wrapRect.width / Math.max(1, wrapRect.height);
+
+      // if image aspect < container aspect => vertical crop (image is narrower => needs vertical fit)
+      // Actually, typical check: if imageAspect < containerAspect => image is taller in relation -> vertical crop
+      if (imageAspect < containerAspect){
+        // vertical crop required -> bias towards showing top part (80% Y)
+        img.style.objectPosition = '50% 80%';
+      } else {
+        // horizontal crop or perfect fit -> center
+        img.style.objectPosition = '50% 50%';
+      }
+    }
+
+    // initial state values
+    let insetPx = resolvedInsetPx();
+    let initialRadius = resolvedRadiusPx();
+
+    function applyClip(inset, radius){
+      visual.style.clipPath = `inset(${inset}px round ${radius}px)`;
+      visual.style.borderRadius = `${radius}px`;
+      visual.style.inset = `${inset}px`;
+    }
+
+    // smoother animation parameters
+    let target = 0;
+    let current = 0;
+    let ticking = false;
+    const LERP = 0.06; // lower => smoother, slower follow (per request)
+    function easeOutSmooth(t){ return 1 - Math.pow(1 - t, 4); } // smoother easing curve
+
+    // compute target progress (0..1) depending on scroll with dead-zone
+    function computeTarget(){
+      const scrollY = window.scrollY || window.pageYOffset;
+      const start = DEAD_ZONE;
+      const vh = window.innerHeight;
+      const threshold = Math.max(1, vh * COLLAPSE_FRAC);
+      let p = (scrollY - start) / threshold;
+      p = Math.max(0, Math.min(1, p));
+      return p;
+    }
+
+    function applyProgress(p){
+      const eased = easeOutSmooth(p);
+      const curInset = Math.max(0, insetPx * (1 - eased));
+      const curRadius = Math.max(0, initialRadius * (1 - eased));
+      applyClip(curInset, curRadius);
+      const shadowAlpha = 0.45 * (1 - eased);
+      visual.style.boxShadow = `0 18px 40px rgba(0,0,0,${shadowAlpha})`;
+      // When fully revealed, ensure exact final state
+      if (p >= 0.999){
+        applyClip(0, 0);
+        visual.style.boxShadow = `0 0 0 rgba(0,0,0,0)`;
+      }
+    }
+
+    function tick(){
+      ticking = false;
+      current = current + (target - current) * LERP;
+      applyProgress(current);
+      if (Math.abs(target - current) > 0.0005){
+        requestTick();
+      }
+    }
+
+    function requestTick(){
+      if (!ticking){
+        ticking = true;
+        requestAnimationFrame(tick);
+      }
+    }
+
+    function onScroll(){
+      if (PREFERS_REDUCED) return;
+      target = computeTarget();
+      requestTick();
+    }
+
+    function onResize(){
+      insetPx = resolvedInsetPx();
+      initialRadius = resolvedRadiusPx();
+      applyCropBias();
+      applyProgress(current);
+    }
+
+    // pause while not visible
+    let active = true;
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        active = en.isIntersecting;
+        if (active) requestTick();
+      });
+    }, { threshold: 0 });
+    io.observe(frame);
+
+    // init: compute inset, radius, apply crop bias and initial clip
+    function init(){
+      insetPx = resolvedInsetPx();
+      initialRadius = resolvedRadiusPx();
+      applyCropBias();
+      target = computeTarget();
+      current = target;
+      applyProgress(current);
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onResize, { passive: true });
+    }
+
+    if (document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', () => {
+        // ensure image natural sizes are available
+        if (!img.complete) {
+          img.addEventListener('load', init, { once: true });
+        } else {
+          init();
+        }
+      });
+    } else {
+      if (!img.complete) {
+        img.addEventListener('load', init, { once: true });
+      } else {
+        init();
+      }
+    }
+
+    // Expose a tiny API to tweak runtime values in console (optional)
+    window.__hero = {
+      setDead(px){ document.documentElement.style.setProperty('--dead-zone', `${px}px`); },
+      setInset(px){ document.documentElement.style.setProperty('--initial-inset', `${px}px`); onResize(); },
+      setRadius(px){ document.documentElement.style.setProperty('--initial-radius', `${px}px`); onResize(); }
+    };
+  })();
+  </script>
 </BaseLayout>
